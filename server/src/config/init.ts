@@ -11,6 +11,7 @@ import "./db";
 import "./clerk";
 
 import userRoute from "../routes/userRoute.js";
+import chatRoute from "../routes/chatRoute.js";
 
 import { clerkMiddleware } from "@hono/clerk-auth";
 
@@ -23,5 +24,6 @@ app.use(performanceMiddleware);
 app.use(authMiddleware);
 
 app.route("/users", userRoute);
+app.route('/chats', chatRoute);
 
 export default app;
