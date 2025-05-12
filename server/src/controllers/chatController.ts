@@ -9,10 +9,18 @@ const CF_API_ENDPOINT = "https://api.cloudflare.com/client/v4/accounts";
 const MODEL = "@cf/meta/llama-3-8b-instruct";
 const API_TIMEOUT = 30000;
 
+// Maximum number of previous message pairs to include for context
+const MAX_CONTEXT_MESSAGES = 10;
+
 const CF_ACCOUNT_ID = process.env.CF_ACCOUNT_ID || "";
 const CF_API_TOKEN = process.env.CF_API_TOKEN || "";
 
-async function callCloudflareAI(prompt: string, maxTokens = 500) {
+interface Message {
+  role: string;
+  content: string;
+}
+
+async function callCloudflareAI(messages: Message[], maxTokens = 500) {
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) {
     console.error("Missing Cloudflare credentials:", {
       accountIdExists: !!CF_ACCOUNT_ID,
@@ -41,12 +49,7 @@ async function callCloudflareAI(prompt: string, maxTokens = 500) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
+          messages: messages,
         }),
         signal: controller.signal,
       }
@@ -82,11 +85,41 @@ async function callCloudflareAI(prompt: string, maxTokens = 500) {
   }
 }
 
+// Prepare conversation history for the AI model with context limitation
+function prepareConversationHistory(
+  messages: IMessage[],
+  includeContext = true
+): Message[] {
+  // If no context needed, just return the latest user message
+  if (!includeContext || messages.length === 0) {
+    return [
+      {
+        role: "user",
+        content: messages[messages.length - 1].content,
+      },
+    ];
+  }
+
+  // Get recent message pairs, limited by MAX_CONTEXT_MESSAGES
+  const recentMessages = messages.slice(
+    Math.max(0, messages.length - MAX_CONTEXT_MESSAGES * 2)
+  );
+
+  // Convert to the format expected by Cloudflare AI API
+  return recentMessages.map((msg) => ({
+    role: msg.role,
+    content: msg.content,
+  }));
+}
+
 async function generateChatTitle(userMessage: string): Promise<string> {
   try {
-    const prompt = `Based on the following user message, generate a short, concise title (3-6 words only). Return ONLY the title, no quotes or additional text.
-
-User message: "${userMessage}"`;
+    const prompt = [
+      {
+        role: "user",
+        content: `Based on the following user message, generate a short, concise title (3-6 words only). Return ONLY the title, no quotes or additional text.\n\nUser message: "${userMessage}"`,
+      },
+    ];
 
     const response = await callCloudflareAI(prompt, 20);
 
@@ -104,10 +137,12 @@ User message: "${userMessage}"`;
   }
 }
 
-async function generateResponse(userMessage: string): Promise<string> {
+async function generateResponse(messages: IMessage[]): Promise<string> {
   try {
-    const prompt = `Please respond to the following message in a helpful and concise way: "${userMessage}"`;
-    return await callCloudflareAI(prompt);
+    // Prepare conversation history with context limitation
+    const conversationHistory = prepareConversationHistory(messages);
+
+    return await callCloudflareAI(conversationHistory);
   } catch (error) {
     console.error("Error generating response:", error);
     return "I apologize, but I encountered an issue processing your request. Please try again.";
@@ -158,7 +193,8 @@ async function createNewChat(c: Context) {
     let aiResponseContent =
       "I'm sorry, I couldn't process your request at this time.";
     try {
-      aiResponseContent = await generateResponse(message);
+      // New chat, so only one message exists (no context yet)
+      aiResponseContent = await generateResponse([userMessage]);
     } catch (responseError) {
       console.error(
         "Failed to generate AI response, using default:",
@@ -221,7 +257,8 @@ async function addMessageToChat(c: Context) {
     let aiResponseContent =
       "I'm sorry, I couldn't process your request at this time.";
     try {
-      aiResponseContent = await generateResponse(message);
+      // Pass full chat history to generate response with context
+      aiResponseContent = await generateResponse(chat.messages);
     } catch (responseError) {
       console.error(
         "Failed to generate AI response, using default:",
