@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { RedirectToSignIn, SignedIn, SignedOut, useUser } from "@clerk/clerk-react";
+import {
+  RedirectToSignIn,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  useUser,
+} from "@clerk/clerk-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import Sidebar from "./Sidebar";
@@ -24,7 +30,7 @@ interface ChatItem {
 }
 
 // API service for chat operations
-const API_BASE_URL = import.meta.env.VITE_API_URL
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const chatService = {
   // Create a new chat
@@ -32,11 +38,11 @@ const chatService = {
     try {
       const response = await axios.post(`${API_BASE_URL}/chats`, {
         message,
-        userId
+        userId,
       });
       return response.data;
     } catch (error) {
-      console.error('Error creating chat:', error);
+      console.error("Error creating chat:", error);
       throw error;
     }
   },
@@ -47,11 +53,11 @@ const chatService = {
       const response = await axios.post(`${API_BASE_URL}/chats`, {
         chatId,
         message,
-        userId
+        userId,
       });
       return response.data;
     } catch (error) {
-      console.error('Error adding message:', error);
+      console.error("Error adding message:", error);
       throw error;
     }
   },
@@ -59,10 +65,12 @@ const chatService = {
   // Get all chats for a user
   getUserChats: async (userId: string) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/chats?userId=${userId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/chats?userId=${userId}`
+      );
       return response.data.chats;
     } catch (error) {
-      console.error('Error fetching chats:', error);
+      console.error("Error fetching chats:", error);
       throw error;
     }
   },
@@ -70,10 +78,12 @@ const chatService = {
   // Get a specific chat
   getChat: async (chatId: string, userId: string) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/chats/${chatId}?userId=${userId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/chats/${chatId}?userId=${userId}`
+      );
       return response.data.chat;
     } catch (error) {
-      console.error('Error fetching chat:', error);
+      console.error("Error fetching chat:", error);
       throw error;
     }
   },
@@ -82,14 +92,14 @@ const chatService = {
   deleteChat: async (chatId: string, userId: string) => {
     try {
       const response = await axios.delete(`${API_BASE_URL}/chats/${chatId}`, {
-        data: { userId }
+        data: { userId },
       });
       return response.data;
     } catch (error) {
-      console.error('Error deleting chat:', error);
+      console.error("Error deleting chat:", error);
       throw error;
     }
-  }
+  },
 };
 
 const Layout = () => {
@@ -97,7 +107,7 @@ const Layout = () => {
   const { chatId } = useParams();
   const { user } = useUser();
   const userId = user?.id;
-  
+
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMessage, setCurrentMessage] = useState("");
@@ -118,7 +128,7 @@ const Layout = () => {
       toast.error("Authentication required. Please sign in.");
       return;
     }
-    
+
     try {
       // Create a temporary chat for optimistic UI update
       const tempId = `temp-${Date.now()}`;
@@ -143,16 +153,18 @@ const Layout = () => {
 
       // Call API to create chat
       const response = await chatService.createChat(message, userId);
-      
+
       // For streaming effect
-      const aiResponse = response.chat.messages.find((msg: any) => msg.role === "assistant")?.content || "";
+      const aiResponse =
+        response.chat.messages.find((msg: any) => msg.role === "assistant")
+          ?.content || "";
       setGeneratedText(aiResponse);
-      
+
       // Update the chat with actual data from server
       setTimeout(() => {
         setChats((prevChats) => {
-          const updatedChats = prevChats.filter(chat => chat.id !== tempId);
-          
+          const updatedChats = prevChats.filter((chat) => chat.id !== tempId);
+
           // Map the response data to our format
           const serverChat = response.chat;
           const newChat: ChatItem = {
@@ -162,30 +174,31 @@ const Layout = () => {
               id: msg._id || `msg-${Date.now()}-${Math.random()}`,
               content: msg.content,
               role: msg.role,
-              timestamp: new Date(msg.timestamp)
+              timestamp: new Date(msg.timestamp),
             })),
-            createdAt: new Date(serverChat.createdAt)
+            createdAt: new Date(serverChat.createdAt),
           };
-          
+
           return [newChat, ...updatedChats];
         });
-        
+
         // Navigate to the real chat URL with the permanent ID
         navigate(`/${response.chat._id}`);
         setIsGenerating(false);
         setGeneratedText("");
       }, aiResponse.length * 15 + 500);
-      
     } catch (error) {
       console.error("Error creating chat:", error);
       setIsGenerating(false);
       setGeneratedText("");
-      
+
       // Show error toast
       toast.error("Failed to create new chat. Please try again.");
-      
+
       // Remove temporary chat if it exists
-      setChats(prevChats => prevChats.filter(chat => !chat.id.startsWith('temp-')));
+      setChats((prevChats) =>
+        prevChats.filter((chat) => !chat.id.startsWith("temp-"))
+      );
     }
   };
 
@@ -195,7 +208,7 @@ const Layout = () => {
       toast.error("Authentication required. Please sign in.");
       return;
     }
-    
+
     try {
       // Add message optimistically for immediate UI update
       const msgId = `msg-${Date.now()}`;
@@ -218,17 +231,17 @@ const Layout = () => {
           return chat;
         });
       });
-      
+
       setIsGenerating(true);
       setGeneratedText("");
-      
+
       // Call API to add message to chat
       const response = await chatService.addMessage(chatId, message, userId);
-      
+
       // For streaming effect
       const aiResponse = response.message.content;
       setGeneratedText(aiResponse);
-      
+
       // Update state with AI response after simulating streaming effect
       setTimeout(() => {
         setChats((prevChats) => {
@@ -251,26 +264,27 @@ const Layout = () => {
             return chat;
           });
         });
-        
+
         setIsGenerating(false);
         setGeneratedText("");
       }, aiResponse.length * 15 + 500);
-      
     } catch (error) {
       console.error("Error adding message:", error);
       setIsGenerating(false);
       setGeneratedText("");
-      
+
       // Show error toast
       toast.error("Failed to send message. Please try again.");
-      
+
       // Remove the optimistically added message
       setChats((prevChats) => {
         return prevChats.map((chat) => {
           if (chat.id === chatId) {
             return {
               ...chat,
-              messages: chat.messages.filter(msg => !msg.id.startsWith('msg-'))
+              messages: chat.messages.filter(
+                (msg) => !msg.id.startsWith("msg-")
+              ),
             };
           }
           return chat;
@@ -296,14 +310,14 @@ const Layout = () => {
       toast.error("Authentication required. Please sign in.");
       return;
     }
-    
+
     // Store the chat being deleted for potential recovery
-    const deletedChat = chats.find(chat => chat.id === id);
-    
+    const deletedChat = chats.find((chat) => chat.id === id);
+
     try {
       // Delete from UI first (optimistic update)
       setChats((prevChats) => prevChats.filter((chat) => chat.id !== id));
-      
+
       if (chatId === id) {
         if (chats.length > 1) {
           const remainingChats = chats.filter((chat) => chat.id !== id);
@@ -312,22 +326,21 @@ const Layout = () => {
           navigate("/");
         }
       }
-      
+
       // Delete from server
       await chatService.deleteChat(id, userId);
-      
+
       // Show success toast
       toast.success("Chat deleted successfully");
-      
     } catch (error) {
       console.error("Error deleting chat:", error);
-      
+
       // Show error toast
       toast.error("Failed to delete chat. Please try again.");
-      
+
       // Restore the deleted chat if it exists
       if (deletedChat) {
-        setChats(prevChats => [...prevChats, deletedChat]);
+        setChats((prevChats) => [...prevChats, deletedChat]);
       }
     }
   };
@@ -336,50 +349,55 @@ const Layout = () => {
   useEffect(() => {
     const fetchChats = async () => {
       if (!userId) return;
-      
+
       try {
         setLoading(true);
         const fetchedChats = await chatService.getUserChats(userId);
-        
+
         // Map the API response to our format
         const formattedChats: ChatItem[] = fetchedChats.map((chat: any) => ({
           id: chat._id,
           title: chat.title,
           createdAt: new Date(chat.createdAt),
-          messages: [] // Initially empty, will load details when clicking on a chat
+          messages: [], // Initially empty, will load details when clicking on a chat
         }));
-        
+
         setChats(formattedChats);
         setLoading(false);
-        
       } catch (error) {
         console.error("Error fetching chats:", error);
         setLoading(false);
         toast.error("Failed to load your chats. Please refresh the page.");
       }
     };
-    
+
     fetchChats();
   }, [userId]);
-  
+
   // Load chat details when a specific chat is selected
   useEffect(() => {
     const loadChatDetails = async () => {
       // Don't load if it's a new chat or temporary chat
-      if (!userId || !chatId || chatId === 'new' || chatId.startsWith('temp-')) return;
-      
+      if (!userId || !chatId || chatId === "new" || chatId.startsWith("temp-"))
+        return;
+
       // Don't reload if we already have the messages
-      const existingChat = chats.find(c => c.id === chatId);
-      if (existingChat && existingChat.messages && existingChat.messages.length > 0) return;
-      
+      const existingChat = chats.find((c) => c.id === chatId);
+      if (
+        existingChat &&
+        existingChat.messages &&
+        existingChat.messages.length > 0
+      )
+        return;
+
       try {
         const chatDetails = await chatService.getChat(chatId, userId);
-        
+
         if (!chatDetails) return;
-        
+
         // Update the chat with full details
-        setChats(prevChats => {
-          return prevChats.map(chat => {
+        setChats((prevChats) => {
+          return prevChats.map((chat) => {
             if (chat.id === chatId) {
               return {
                 ...chat,
@@ -387,20 +405,19 @@ const Layout = () => {
                   id: msg._id || `msg-${Date.now()}-${Math.random()}`,
                   content: msg.content,
                   role: msg.role,
-                  timestamp: new Date(msg.timestamp)
-                }))
+                  timestamp: new Date(msg.timestamp),
+                })),
               };
             }
             return chat;
           });
         });
-        
       } catch (error) {
         console.error("Error loading chat details:", error);
         toast.error("Failed to load chat details. Please try again.");
       }
     };
-    
+
     loadChatDetails();
   }, [chatId, userId, chats]);
 
@@ -424,12 +441,12 @@ const Layout = () => {
           },
         }}
       />
-      
+
       <SignedOut>
         <RedirectToSignIn />
       </SignedOut>
       <SignedIn>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -441,14 +458,19 @@ const Layout = () => {
             onDeleteChat={handleDeleteChat}
             formatDate={formatDate}
           />
-          <Chat
-            chat={currentChat}
-            onSubmit={handleSubmit}
-            currentMessage={currentMessage}
-            setCurrentMessage={setCurrentMessage}
-            isGenerating={isGenerating}
-            generatedText={generatedText}
-          />
+          <div className="w-full min-h-screen">
+            <div className="flex items-center justify-end px-5 py-2 bg-gray-100 border-b">
+              <UserButton />
+            </div>
+            <Chat
+              chat={currentChat}
+              onSubmit={handleSubmit}
+              currentMessage={currentMessage}
+              setCurrentMessage={setCurrentMessage}
+              isGenerating={isGenerating}
+              generatedText={generatedText}
+            />
+          </div>
         </motion.div>
       </SignedIn>
     </>

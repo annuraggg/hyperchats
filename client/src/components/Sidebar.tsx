@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  PlusCircle,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  MessageSquare,
-} from "lucide-react";
+import { PlusCircle, Trash2, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Types
@@ -30,7 +24,7 @@ const Sidebar = ({
   loading,
 }: SidebarProps) => {
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen] = useState(true);
   const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
 
   // Group chats by date
@@ -60,7 +54,7 @@ const Sidebar = ({
         className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700"
       >
         <div className="flex items-center">
-          <img src="/logo-icon.svg" alt="Logo" className="h-8 w-8 mr-2" />
+          <img src="/logo-icon-black.png" alt="Logo" className="h-8 w-8 mr-2" />
           {isOpen && (
             <motion.h1
               initial={{ opacity: 0 }}
@@ -71,7 +65,7 @@ const Sidebar = ({
             </motion.h1>
           )}
         </div>
-        <button
+        {/* <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -81,7 +75,7 @@ const Sidebar = ({
           ) : (
             <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           )}
-        </button>
+        </button> */}
       </motion.div>
 
       {/* New chat button */}
@@ -193,54 +187,6 @@ const Sidebar = ({
             )}
           </AnimatePresence>
         )}
-      </div>
-
-      {/* User info section */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-3">
-        <div
-          className={`flex items-center ${
-            isOpen ? "justify-between" : "justify-center"
-          } bg-gray-200 dark:bg-gray-700 rounded-md p-2`}
-        >
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
-              {isOpen ? "A" : "A"}
-            </div>
-            {isOpen && (
-              <div className="ml-2">
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  annuraggg1
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  @annuraggg1
-                </div>
-              </div>
-            )}
-          </div>
-          {isOpen && (
-            <button
-              className="p-1.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600"
-              aria-label="User settings"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-gray-500 dark:text-gray-400"
-              >
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="19" cy="12" r="1" />
-                <circle cx="5" cy="12" r="1" />
-              </svg>
-            </button>
-          )}
-        </div>
       </div>
     </motion.div>
   );
