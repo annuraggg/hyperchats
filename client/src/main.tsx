@@ -15,7 +15,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <App />
-      <Toaster richColors />
+      <Toaster richColors position="top-right" />
     </ClerkProvider>
   </StrictMode>
 );

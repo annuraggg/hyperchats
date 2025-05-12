@@ -12,7 +12,7 @@ import Sidebar from "./Sidebar";
 import Chat from "./Chat";
 import { format, isToday, isYesterday, isSameYear } from "date-fns";
 import axios from "axios";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 
 // Types
 interface Message {
@@ -426,22 +426,6 @@ const Layout = () => {
 
   return (
     <>
-      {/* Add Sonner Toaster component */}
-      <Toaster
-        position="top-right"
-        closeButton
-        richColors
-        visibleToasts={3}
-        toastOptions={{
-          duration: 3000,
-          className: "my-toast-class",
-          style: {
-            background: "var(--background)",
-            color: "var(--foreground)",
-          },
-        }}
-      />
-
       <SignedOut>
         <RedirectToSignIn />
       </SignedOut>
